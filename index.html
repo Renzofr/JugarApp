@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Python Aventura – 50 niveles para aprender Python jugando</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#2b2e2a;--panel:#383b36;--line:#4a4e47;--tx:#f1f3ee;--mut:#a9afa3;--g:#6ee01c;--gd:#2f5f0f;--grass:#7fa66d;--err:#ff7b6b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2b2e2a}}
+:root[data-theme="dark"]{--bg:#2b2e2a}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.pf{font-family:"Press Start 2P",ui-monospace,monospace}
+header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 18px;background:#33362f;border-bottom:2px solid var(--line)}
+header h1{margin:0;font-size:14px;color:var(--g)}
+#prog{font-size:13px;color:var(--mut)}
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;padding:18px;max-width:1100px;margin:auto}
+@media(max-width:820px){main{grid-template-columns:1fr}.right{order:-1}}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px;width:100%}
+h2{margin:0 0 6px;font-size:11px;line-height:1.7;color:var(--g)}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--gd);color:#d7f7a8;margin-bottom:6px}
+p{margin:6px 0}
+.cmds{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+code,.cmds span{font-family:ui-monospace,Consolas,monospace;background:#23261f;border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:12px;color:#d7f7a8}
+textarea{width:100%;height:210px;margin-top:10px;background:#1d201a;color:#e8f5d8;border:2px solid var(--line);border-radius:8px;padding:10px;font:15px/1.5 ui-monospace,Consolas,monospace;resize:vertical;tab-size:4}
+textarea:focus{outline:none;border-color:var(--g)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+button.b{border:2px solid var(--g);background:transparent;color:var(--g);padding:9px 14px;border-radius:6px;cursor:pointer;font:700 13px system-ui}
+button.b.main{background:var(--g);color:#16260a}
+button.b:disabled{opacity:.45;cursor:default}
+#msg{min-height:48px;margin-top:10px;padding:10px;border-radius:8px;background:#23261f;font-size:14px;white-space:pre-wrap}
+#msg.err{color:var(--err)}#msg.ok{color:var(--g)}
+.right{display:flex;flex-direction:column;align-items:center;gap:12px}
+.board{width:min(92vw,480px);font-size:min(6.6vw,38px);display:grid;grid-template-columns:repeat(8,1fr);border:4px solid #1d201a;border-radius:8px;overflow:hidden}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--grass);line-height:1}
+.cell:nth-child(even){background:#78a066}
+.cell.trk{box-shadow:inset 0 0 0 2px rgba(255,235,120,.6)}
+.pl{position:relative;display:block}
+.pl i{position:absolute;left:50%;top:-.28em;font-size:.32em;font-style:normal;color:#fff;transform-origin:50% calc(.28em + .5em);transform:translateX(-50%) rotate(var(--r))}
+.pl.bad{filter:grayscale(1)}
+#lv{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+#lv button{aspect-ratio:1;border:2px solid var(--line);background:#2f322d;color:var(--mut);border-radius:6px;cursor:pointer;font:700 12px system-ui;padding:0}
+#lv button.on{border-color:var(--g);color:var(--g)}
+#lv button.done{background:var(--gd);color:#fff}
+small{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <h1 class="pf">PYTHON AVENTURA</h1>
+  <div id="prog"></div>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <span class="badge" id="bdg"></span>
+      <h2 class="pf" id="ttl"></h2>
+      <p id="mis"></p>
+      <div class="cmds" id="cmds"></div>
+      <textarea id="code" spellcheck="false" aria-label="Editor de código Python"></textarea>
+      <div class="bar">
+        <button class="b main" id="run">▶ EJECUTAR CÓDIGO</button>
+        <button class="b" id="reset">↺ REINICIAR</button>
+        <button class="b" id="hint">💡 PISTA</button>
+        <button class="b" id="next" hidden>SIGUIENTE ›</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+  </section>
+  <section class="right">
+    <div class="board" id="board"></div>
+    <small>⭐ estrella · 🌟 estrella móvil (casillas con borde amarillo) · 🌳 árbol</small>
+    <div class="card"><h2 class="pf">NIVELES</h2><div id="lv"></div></div>
+  </section>
+</main>
+<script>
+const N=8,DX=[0,1,0,-1],DY=[-1,0,1,0];
+const A=n=>'avanzar()\n'.repeat(n),GD='girar_derecha()\n',GI='girar_izquierda()\n';
+const col=x=>[...Array(N)].map((_,y)=>[x,y]),row=y=>[...Array(N)].map((_,x)=>[x,y]);
+const WH='while camino_libre():\n  avanzar()',WL=['while camino_libre():','  avanzar()'];
+const mk=(n,s)=>{const e=new Error(s);e.line=n;return e};
+function parse(src){
+  const L=src.split('\n').map((raw,i)=>{const s=raw.replace(/\t/g,'    ').replace(/#.*$/,'');return{n:i+1,ind:s.search(/\S|$/),s:s.trim()}}).filter(o=>o.s);let p=0;
+  function block(ind){const out=[];
+    while(p<L.length){const x=L[p];if(x.ind<ind)break;
+      if(x.ind>ind)throw mk(x.n,'Sangría inesperada: revisa los espacios al inicio de la línea.');
+      p++;
+      if(x.s.endsWith(':')){
+        if(p>=L.length||L[p].ind<=ind)throw mk(x.n,'Después de «:» escribe líneas con sangría (4 espacios).');
+        const body=block(L[p].ind);
+        if(x.s==='else:'){const q=out[out.length-1];if(!q||!/^if\s/.test(q.s))throw mk(x.n,'«else:» debe ir justo después de un «if».');q.els=body}
+        else out.push({...x,body})
+      }else out.push(x)}
+    return out}
+  return block(0)}
+function sim(src,B){
+  let x=B.x,y=B.y,d=B.d,got=new Set(),mvg=false;
+  const mv=B.mv?{x:B.mv[0],y:B.mv[1],dx:B.mv[2],dy:B.mv[3],a:B.mv[4],b:B.mv[5]}:null;
+  const S={frames:[],steps:0,cl:0,err:null,vis:new Set([x+','+y]),mid:[],turns:[]};
+  const inb=(a,b)=>a>=0&&b>=0&&a<N&&b<N,tr=(a,b)=>B.trees.has(a+','+b),env={},F={};
+  const snap=bad=>S.frames.push({x,y,d,got:[...got],mv:mv&&!mvg?{x:mv.x,y:mv.y}:null,bad});
+  const chk=()=>{if(B.stars.includes(x+','+y))got.add(x+','+y);if(mv&&!mvg&&mv.x===x&&mv.y===y)mvg=true};
+  const tick=()=>{chk();
+    if(mv&&!mvg){let nx=mv.x+mv.dx,ny=mv.y+mv.dy;
+      if((mv.dx&&(nx<mv.a||nx>mv.b))||(mv.dy&&(ny<mv.a||ny>mv.b))){mv.dx=-mv.dx;mv.dy=-mv.dy;nx=mv.x+mv.dx;ny=mv.y+mv.dy}
+      mv.x=nx;mv.y=ny}
+    chk();snap();
+    if(S.frames.length>300)throw mk(S.cl,'Tu programa hace demasiadas acciones (¿bucle infinito?).')};
+  const free=k=>{const a=x+DX[d]*k,b=y+DY[d]*k;return inb(a,b)&&!tr(a,b)};
+  const sens={camino_libre:()=>free(1),
+    hay_arbol:()=>{const a=x+DX[d],b=y+DY[d];return inb(a,b)&&tr(a,b)},
+    estrella_adelante:()=>!!mv&&!mvg&&mv.x===x+DX[d]&&mv.y===y+DY[d]};
+  const act={
+    avanzar(n){if(!free(1)){snap(true);throw mk(n,'¡Chocaste! No puedes avanzar hacia allá.')}x+=DX[d];y+=DY[d];S.vis.add(x+','+y);tick()},
+    saltar(n){if(!free(2)){snap(true);throw mk(n,'No puedes saltar hacia allá: la casilla de aterrizaje está bloqueada o fuera del mapa.')}
+      S.mid.push((x+DX[d])+','+(y+DY[d]));x+=2*DX[d];y+=2*DY[d];S.vis.add(x+','+y);tick()},
+    girar_derecha(){d=(d+1)%4;S.turns.push(x+','+y);tick()},
+    girar_izquierda(){d=(d+3)%4;S.turns.push(x+','+y);tick()},
+    esperar(){tick()}};
+  const val=(t,n)=>{t=t.trim();const m=t.match(/^(\w+)\s*([+-])\s*(\w+)$/);
+    if(m)return m[2]==='+'?val(m[1],n)+val(m[3],n):val(m[1],n)-val(m[3],n);
+    if(/^\d+$/.test(t))return+t;if(t in env)return env[t];throw mk(n,`No conozco «${t}».`)};
+  const cond=(t,n)=>{t=t.trim();if(t.startsWith('not '))return!cond(t.slice(4),n);
+    const m=t.match(/^(\w+)\(\)$/);if(m&&sens[m[1]])return sens[m[1]]();
+    throw mk(n,`No entiendo la condición «${t}».`)};
+  function run(nodes){for(const o of nodes){
+    S.cl=o.n;if(++S.steps>3000)throw mk(o.n,'Tu programa tarda demasiado (¿bucle infinito?).');
+    const s=o.s;let m;
+    if(o.body){
+      if(m=s.match(/^for\s+([A-Za-z_]\w*)\s+in\s+range\(\s*(\w+)\s*\):$/)){const k=Math.min(val(m[2],o.n),100);for(let i=0;i<k;i++){env[m[1]]=i;run(o.body)}}
+      else if(m=s.match(/^while\s+(.+):$/)){while(cond(m[1],o.n))run(o.body)}
+      else if(m=s.match(/^if\s+(.+):$/)){if(cond(m[1],o.n))run(o.body);else if(o.els)run(o.els)}
+      else if(m=s.match(/^def\s+(\w+)\(\)\s*:$/))F[m[1]]=o.body;
+      else throw mk(o.n,`No entiendo «${s}». Revisa for, while, if o def.`)}
+    else if(m=s.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))env[m[1]]=val(m[2],o.n);
+    else if(m=s.match(/^(\w+)\(\s*\)$/)){if(act[m[1]])act[m[1]](o.n);else if(F[m[1]])run(F[m[1]]);else throw mk(o.n,`No conozco el comando «${m[1]}()». ¿Lo escribiste bien?`)}
+    else throw mk(o.n,`No entiendo la línea «${s}». Los comandos terminan en paréntesis, como avanzar().`)}}
+  snap();
+  try{run(parse(src))}catch(e){S.err=e}
+  S.end=[x,y];S.total=B.stars.length+(mv?1:0);S.got=got.size+(mvg?1:0);S.ok=!S.err&&S.got===S.total;
+  return S}
+/* ===== Niveles: [misión, x, y, dirección(0↑ 1→ 2↓ 3←), solución de referencia, opciones{T:árboles, mv:estrella móvil, m:máx. líneas}] ===== */
+const FI='for i in range(',IFT='  if hay_arbol():\n    saltar()\n  else:\n    avanzar()';
+const D=[
+['Avanza hasta la estrella con el comando avanzar().',0,4,1,A(3)],
+['Más lejos: tendrás que escribir varios avanzar().',0,4,1,A(6)],
+['Avanza, gira a la derecha y sigue.',1,6,0,A(3)+GD+A(3)],
+['Ahora gira a la izquierda.',6,6,0,A(4)+GI+A(4)],
+['Recoge la estrella después de girar.',0,6,1,A(3)+GI+A(4)],
+['Una «U»: recoge las 3 estrellas.',1,1,1,A(4)+GD+A(3)+GD+A(4)],
+['Zigzag: ¡cuidado con el orden de los giros!',0,6,1,A(2)+GI+A(2)+GD+A(2)+GI+A(2)],
+['Una espiral. ¿Cansado de escribir tanto? Los bucles te ayudarán.',1,1,1,A(5)+GD+A(5)+GD+A(5)+GD+A(4)+GD+A(3)],
+['Usa un bucle for para repetir una orden.',0,4,1,FI+'7):\n  avanzar()',{m:2}],
+['Un bucle, un giro y otro bucle.',0,0,1,FI+'5):\n  avanzar()\ngirar_derecha()\n'+FI+'5):\n  avanzar()',{m:5}],
+['Sube la escalera repitiendo un grupo de órdenes.',0,7,1,FI+'4):\n  avanzar()\n  girar_izquierda()\n  avanzar()\n  girar_derecha()',{m:5}],
+['La escalera completa hasta la esquina.',0,7,1,FI+'7):\n  avanzar()\n  girar_izquierda()\n  avanzar()\n  girar_derecha()',{m:5}],
+['Bucles dentro de bucles: recorre tres lados del cuadrado.',1,1,1,FI+'3):\n  '+FI+'5):\n    avanzar()\n  girar_derecha()',{m:5}],
+['Los cuatro lados: vuelves al punto de partida.',1,1,1,FI+'4):\n  '+FI+'5):\n    avanzar()\n  girar_derecha()',{m:5}],
+['Un rectángulo: 5 pasos y 3 pasos.',1,1,1,FI+'2):\n  '+FI+'5):\n    avanzar()\n  girar_derecha()\n  '+FI+'3):\n    avanzar()\n  girar_derecha()',{m:8}],
+['Avanza MIENTRAS el camino esté libre.',0,4,1,WH,{m:2}],
+['No importa cuántos pasos sean: while lo averigua.',3,7,0,WH,{m:2}],
+['Rodea todo el borde del mapa.',0,0,1,FI+'4):\n  while camino_libre():\n    avanzar()\n  girar_derecha()',{m:5}],
+['Hay un árbol. Avanza hasta él, gira y llega al borde.',0,4,1,WH+'\ngirar_derecha()\n'+WH,{T:[[5,4]],m:5}],
+['Dos árboles bloquean el camino. Rodéalos.',0,6,1,WH+'\ngirar_izquierda()\n'+WH+'\ngirar_derecha()\n'+WH,{T:[[4,6],[4,1]],m:8}],
+['Baja por el pasillo y luego avanza hasta el árbol.',0,0,2,WH+'\ngirar_izquierda()\n'+WH,{T:[[3,7]],m:5}],
+['¡Salta el árbol con saltar()! Pasa por encima de 1 casilla.',0,4,1,'avanzar()\nsaltar()\navanzar()',{T:[[2,4]]}],
+['Tres obstáculos seguidos: ¡tres saltos!',0,4,1,'saltar()\nsaltar()\nsaltar()'],
+['Combina avanzar y saltar en un bucle.',0,6,1,FI+'2):\n  avanzar()\n  saltar()',{m:3}],
+['Salta, gira y salta otra vez.',1,6,0,'saltar()\ngirar_derecha()\nsaltar()\navanzar()'],
+['Un muro de árboles: avanza hasta él y salta.',0,3,1,WH+'\nsaltar()\n'+WH,{T:col(4),m:6}],
+['Salta en círculo.',1,1,1,FI+'3):\n  saltar()\n  girar_derecha()',{m:4}],
+['Dos muros. ¡Pocas líneas!',0,5,1,FI+'2):\n  avanzar()\n  saltar()\navanzar()',{T:col(2).concat(col(5)),m:4}],
+['Dos muros con while y saltar.',0,2,1,FI+'2):\n  while camino_libre():\n    avanzar()\n  saltar()\n'+WH,{T:col(2).concat(col(5)),m:7}],
+['Un muro horizontal: sube, salta y corre.',2,7,0,WH+'\nsaltar()\ngirar_derecha()\n'+WH,{T:row(4),m:7}],
+['Decide con if y else: si hay un árbol, salta; si no, avanza.',0,4,1,FI+'5):\n'+IFT,{T:[[2,4],[5,4]],m:6}],
+['Tres árboles en fila. Ajusta el número de repeticiones.',0,4,1,FI+'4):\n'+IFT,{T:[[1,4],[3,4],[6,4]],m:6}],
+['Ahora hacia arriba.',3,7,0,FI+'5):\n'+IFT,{T:[[3,5],[3,2]],m:6}],
+['Si hay un árbol, gira a la derecha; si no, avanza.',0,1,1,FI+'11):\n  if hay_arbol():\n    girar_derecha()\n  else:\n    avanzar()',{T:[[4,1],[3,5]],m:6}],
+['Un if sin else: salta solo cuando haga falta.',0,4,1,FI+'5):\n  if hay_arbol():\n    saltar()\n  avanzar()',{T:[[3,4]],m:4}],
+['Crea tu propia función con def y úsala dos veces.',0,4,1,'def paso():\n  saltar()\n  avanzar()\n\npaso()\npaso()',{m:5}],
+['Una función para recorrer un lado del cuadrado.',1,1,1,'def lado():\n  '+FI+'4):\n    avanzar()\n  girar_derecha()\n\n'+FI+'4):\n  lado()',{m:6}],
+['Una función «escalón» y un bucle.',0,7,1,'def escalon():\n  avanzar()\n  girar_izquierda()\n  avanzar()\n  girar_derecha()\n\n'+FI+'6):\n  escalon()',{m:8}],
+['Guarda el tamaño del lado en una variable.',1,1,1,'n = 4\n'+FI+'n):\n  avanzar()\ngirar_derecha()\n'+FI+'n):\n  avanzar()\ngirar_derecha()\n'+FI+'n):\n  avanzar()',{m:9}],
+['Espiral: la variable crece con n = n + 1.',3,3,1,'n = 1\n'+FI+'6):\n  '+FI+'n):\n    avanzar()\n  girar_derecha()\n  n = n + 1',{m:7}],
+['¡La estrella se mueve! Usa esperar() hasta que esté delante de ti.',3,6,0,'while not estrella_adelante():\n  esperar()\navanzar()',{mv:[0,5,1,0,0,7],m:3}],
+['Primero acércate, luego espera.',3,7,0,A(2)+'while not estrella_adelante():\n  esperar()\navanzar()',{mv:[7,4,-1,0,0,7],m:5}],
+['Ahora la estrella sube y baja.',0,3,1,A(2)+'while not estrella_adelante():\n  esperar()\navanzar()',{mv:[3,0,0,1,0,7],m:5}],
+['Salta el muro y atrapa la estrella.',0,3,1,WH+'\nsaltar()\nwhile not estrella_adelante():\n  esperar()\navanzar()',{T:col(2),mv:[4,7,0,-1,0,7],m:7}],
+['La estrella patrulla una fila larga: ¡paciencia!',4,7,0,FI+'4):\n  avanzar()\nwhile not estrella_adelante():\n  esperar()\navanzar()',{mv:[7,2,-1,0,0,7],m:6}],
+['Función de salto + bucle + while.',0,6,1,'def salto():\n  saltar()\n  avanzar()\n\n'+FI+'2):\n  salto()\n'+WH,{m:7}],
+['Saltos largos por las esquinas.',0,0,1,FI+'2):\n  saltar()\n  saltar()\n  girar_derecha()',{m:5}],
+['Una función que decide: ¿salto o avanzo?',0,4,1,'def paso():\n  if hay_arbol():\n    saltar()\n  else:\n    avanzar()\n\n'+FI+'4):\n  paso()',{T:[[1,4],[4,4],[6,4]],m:8}],
+['Una función que espera a la estrella.',3,7,0,'def esperar_estrella():\n  while not estrella_adelante():\n    esperar()\n\navanzar()\nesperar_estrella()\navanzar()',{mv:[7,5,-1,0,0,7],m:7}],
+['¡JEFE FINAL! Dos muros y una estrella que patrulla.',0,5,1,'def pasar():\n  avanzar()\n  saltar()\n\npasar()\npasar()\nwhile not estrella_adelante():\n  esperar()\navanzar()',{T:col(2).concat(col(5)),mv:[7,0,0,1,0,7],m:9}]
+];
+const TB=[8,15,21,30,35,40,45,50];
+const TN=[['Fácil','Primeros pasos'],['Fácil','Bucles for'],['Medio','Bucles while'],['Medio','Saltos'],['Difícil','Decisiones if / else'],['Difícil','Funciones y variables'],['Experto','Estrella móvil'],['Experto','Jefe final']];
+const CM=[['avanzar()','girar_derecha()','girar_izquierda()'],['for i in range(n):'],['while camino_libre():'],['saltar()','hay_arbol()'],['if …:','else:'],['def nombre():','n = n + 1'],['esperar()','estrella_adelante()'],[]];
+function rng(s){return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function build(r,i){
+  const[mis,x,y,d,sol,o={}]=r,L={tier:TB.findIndex(v=>i<v),mis,sol,max:o.m||0};
+  const T=new Set((o.T||[]).map(p=>p+'')),B={x,y,d,trees:T,stars:[],mv:o.mv};L.B=B;
+  const G=sim(sol,B);if(G.err){L.err='ref: '+G.err.message;return L}
+  if(!o.mv)B.stars=[...new Set([...G.turns,G.end+''])].filter(s=>s!==x+','+y);
+  const mids=G.mid.filter(m=>!G.vis.has(m)),trk=new Set();
+  if(o.mv){const[a,b,dx,dy,lo,hi]=o.mv;for(let k=lo;k<=hi;k++)trk.add(dx?k+','+b:a+','+k)}
+  L.trk=trk;let ok=false;
+  for(const dens of[.22,.14,.07,0]){
+    const rn=rng(i*131+7),tt=new Set(T);mids.forEach(m=>tt.add(m));
+    for(let a=0;a<N;a++)for(let b=0;b<N;b++){const k=a+','+b;if(dens&&!G.vis.has(k)&&!tt.has(k)&&!trk.has(k)&&rn()<dens)tt.add(k)}
+    B.trees=tt;if(ok=sim(sol,B).ok)break}
+  if(!ok)L.err='la solución de referencia falla';
+  return L}
+const LV=D.map(build);
+if(typeof document!=='undefined'){
+const $=id=>document.getElementById(id);
+let cur=0,timer=null,done=new Set();
+try{done=new Set(JSON.parse(localStorage.getItem('pyav50')||'[]'))}catch(e){}
+const save=()=>{try{localStorage.setItem('pyav50',JSON.stringify([...done]))}catch(e){}};
+const startF=()=>{const B=LV[cur].B;return{x:B.x,y:B.y,d:B.d,got:[],mv:B.mv?{x:B.mv[0],y:B.mv[1]}:null}};
+function draw(f){
+  const L=LV[cur],B=L.B;let h='';
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+    const k=i+','+j;let t='';
+    if(B.trees.has(k))t='🌳';else if(B.stars.includes(k)&&!f.got.includes(k))t='⭐';
+    if(f.mv&&f.mv.x===i&&f.mv.y===j)t='🌟';
+    if(f.x===i&&f.y===j)t=`<span class="pl${f.bad?' bad':''}" style="--r:${f.d*90}deg">🐱<i>▲</i></span>`;
+    h+=`<div class="cell${L.trk.has(k)?' trk':''}">${t}</div>`}
+  $('board').innerHTML=h}
+const msg=(t,c)=>{$('msg').textContent=t;$('msg').className=c||''};
+function nav(){
+  $('lv').innerHTML=LV.map((_,i)=>`<button data-i="${i}" class="${i===cur?'on':''} ${done.has(i)?'done':''}">${i+1}</button>`).join('');
+  $('prog').textContent=`${done.size} / ${LV.length} niveles completados`}
+function load(i){
+  clearTimeout(timer);cur=i;const L=LV[i],t=TN[L.tier];
+  $('bdg').textContent=`${t[0]} · ${t[1]}`;
+  $('ttl').textContent=`NIVEL ${i+1} / ${LV.length}`;
+  $('mis').textContent=L.mis+(L.max?` · Máximo ${L.max} líneas.`:'');
+  $('cmds').innerHTML=CM.slice(0,L.tier+1).flat().map(c=>`<span>${c}</span>`).join('');
+  $('code').value='# Escribe tu código aquí\n';$('next').hidden=true;$('run').disabled=false;
+  msg(L.err?'⚠ Este nivel tiene un problema: '+L.err:'Escribe tu código y pulsa «Ejecutar código».');
+  draw(startF());nav()}
+const lines=s=>s.split('\n').filter(l=>l.replace(/#.*$/,'').trim()).length;
+$('run').onclick=()=>{
+  const L=LV[cur],src=$('code').value;
+  draw(startF());clearTimeout(timer);$('run').disabled=true;$('next').hidden=true;msg('Ejecutando…');
+  const S=sim(src,L.B);let k=0;
+  (function step(){
+    if(k<S.frames.length){draw(S.frames[k++]);timer=setTimeout(step,260);return}
+    $('run').disabled=false;
+    if(S.err)return msg(`Línea ${S.err.line}: ${S.err.message}`,'err');
+    if(S.got<S.total)return msg(`Recogiste ${S.got} de ${S.total} estrellas. ¡Inténtalo otra vez!`,'err');
+    if(L.max&&lines(src)>L.max)return msg(`¡Llegaste! Pero usaste ${lines(src)} líneas y el máximo es ${L.max}. Acórtalo.`,'err');
+    done.add(cur);save();nav();
+    msg(cur<LV.length-1?'🎉 ¡Nivel completado!':'🏆 ¡Completaste los 50 niveles! Ya dominas bucles, saltos, decisiones, funciones y variables.','ok');
+    if(cur<LV.length-1)$('next').hidden=false})()};
+$('reset').onclick=()=>load(cur);
+$('hint').onclick=()=>{const s=LV[cur].sol.split('\n').filter(Boolean);msg('💡 Así empieza una solución:\n'+s.slice(0,Math.ceil(s.length/2)).join('\n')+'\n…')};
+$('next').onclick=()=>load(cur+1);
+$('lv').onclick=e=>{const b=e.target.closest('button');if(b)load(+b.dataset.i)};
+$('code').addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.slice(0,s)+'    '+t.value.slice(t.selectionEnd);t.selectionStart=t.selectionEnd=s+4}});
+load([...Array(LV.length).keys()].find(i=>!done.has(i))??0);
+}
+</script>
+</body>
+</html>
